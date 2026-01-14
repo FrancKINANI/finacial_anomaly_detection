@@ -1,0 +1,17 @@
+ Borrowing dependency
+ Debt ratio %
+ Net Income to Stockholder's Equity
+ Net Income to Total Assets
+ Persistent EPS in the Last Four Seasons
+ Net profit before tax/Paid-in capital
+ Interest Expense Ratio
+ Degree of Financial Leverage (DFL)
+ Total debt/Total net worth
+ ROA(A) before interest and % after tax
+ Continuous interest rate (after tax)
+ ROA(C) before interest and depreciation before interest
+ Net worth/Assets
+ Per Share Net profit before tax (Yuan ¥)
+ Net Value Per Share (B)
+ Interest-bearing debt interest rate
+ Net Value Growth Rate

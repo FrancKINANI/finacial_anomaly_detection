@@ -1,0 +1,86 @@
+
+RAPPORT DE SÉLECTION DE CARACTÉRISTIQUES
+========================================
+Dataset: Taiwanese Bankruptcy Prediction
+Date: 2026-01-13 09:54
+
+DONNÉES INITIALES:
+-----------------
+• Observations: 6,819
+• Features totales: 95
+• Variable cible: Bankrupt?
+
+MÉTHODES APPLIQUÉES:
+-------------------
+1. SelectKBest (F-test ANOVA)
+2. Mutual Information
+3. RFE (Recursive Feature Elimination)
+4. Forward Selection
+5. Random Forest Feature Importance
+
+PARAMÈTRES:
+----------
+• Top K features par méthode: 20
+• Critère de sélection finale: ≥3 méthodes
+
+RÉSULTAT FINAL:
+--------------
+• Features sélectionnées: 17
+• Réduction: 82.1%
+• Features par méthode:
+  - SelectKBest: 20
+  - Mutual Info: 20
+  - RFE: 20
+  - Forward Selection: 20
+  - RF Importance: 20
+
+TOP 10 FEATURES FINALES:
+-----------------------
+   1.  Borrowing dependency
+   2.  Debt ratio %
+   3.  Net Income to Stockholder's Equity
+   4.  Net Income to Total Assets
+   5.  Persistent EPS in the Last Four Seasons
+   6.  Net profit before tax/Paid-in capital
+   7.  Interest Expense Ratio
+   8.  Degree of Financial Leverage (DFL)
+   9.  Total debt/Total net worth
+  10.  ROA(A) before interest and % after tax
+
+FEATURES LES PLUS CONSENSUELLES:
+-------------------------------
+  •  Borrowing dependency (sélectionnée 5x)
+  •  Debt ratio % (sélectionnée 5x)
+  •  Net Income to Stockholder's Equity (sélectionnée 4x)
+  •  Net Income to Total Assets (sélectionnée 4x)
+  •  Persistent EPS in the Last Four Seasons (sélectionnée 4x)
+
+FICHIERS GÉNÉRÉS:
+----------------
+✓ financial_data_selected_features.csv (6,819 × 18)
+✓ selected_features.txt (liste des 17 features)
+✓ Graphiques de comparaison:
+  - feature_selection_kbest.png
+  - feature_selection_mi.png
+  - forward_selection_progression.png
+  - feature_importance_rf.png
+  - feature_selection_comparison.png
+
+AVANTAGES DE LA RÉDUCTION:
+--------------------------
+✓ Moins de features = modèles plus rapides
+✓ Réduction du risque de sur-apprentissage (overfitting)
+✓ Meilleure interprétabilité des modèles
+✓ Élimination du bruit et des features redondantes
+✓ Focus sur les ratios financiers les plus prédictifs
+
+INTERPRÉTATION:
+--------------
+Les features finales représentent les ratios financiers les plus
+discriminants pour prédire le risque de faillite. Ces indicateurs
+ont été validés par plusieurs méthodes statistiques indépendantes.
+
+PROCHAINE ÉTAPE:
+---------------
+→ Notebook 04: Réduction de dimensionnalité (04_dimensionality_reduction.ipynb)
+  Utiliser: financial_data_selected_features.csv

@@ -1,0 +1,55 @@
+
+📊 DATASET: Taiwanese Bankruptcy Prediction
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DIMENSIONS:
+-----------
+• Observations: 6,819
+• Variables: 96
+• Taille: 4.99 MB
+
+VARIABLE CIBLE (Bankrupt?):
+--------------------------
+• Entreprises saines (0): 6,599 (96.77%)
+• Entreprises en faillite (1): 220 (3.23%)
+• Ratio de déséquilibre: 30.00:1
+• ⚠️ Dataset TRÈS DÉSÉQUILIBRÉ
+
+QUALITÉ DES DONNÉES:
+-------------------
+• Valeurs manquantes: 0 (0.00%)
+• Duplicatas: 0 (0.00%)
+• Outliers détectés: 4,534
+
+TOP 5 RATIOS CORRÉLÉS À LA FAILLITE:
+------------------------------------
+  1.  Net Income to Total Assets
+  2.  ROA(A) before interest and % after tax
+  3.  ROA(B) before interest and depreciation after tax
+  4.  ROA(C) before interest and depreciation before interest
+  5.  Net worth/Assets
+
+ACTIONS RECOMMANDÉES:
+--------------------
+✓ Traiter le déséquilibre (SMOTE, undersampling)
+
+
+✓ Traiter les outliers extrêmes
+✓ Normaliser/Standardiser les ratios financiers
+✓ Sélectionner les features les plus pertinentes
+✓ Réduction de dimensionnalité (95 features → ~15-20)
+
+FICHIERS GÉNÉRÉS:
+----------------
+✓ target_distribution.png
+✓ descriptive_statistics.csv
+✓ ratios_distribution.png
+✓ ratios_comparison.png
+✓ correlation_matrix.png
+✓ target_correlations.png
+✓ outliers_boxplots.png
+✓ 3d_visualization.html
+
+PROCHAINE ÉTAPE:
+---------------
+→ Notebook 02: Nettoyage des données (02_cleaning.ipynb)

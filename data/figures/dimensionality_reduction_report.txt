@@ -1,0 +1,62 @@
+
+RÉSULTATS DE LA RÉDUCTION DE DIMENSIONNALITÉ
+============================================
+Dataset: Taiwanese Bankruptcy Prediction
+
+DIMENSIONS ORIGINALES:
+---------------------
+• Features: 17
+• Observations: 6,819
+
+PCA (PRINCIPAL COMPONENT ANALYSIS):
+-----------------------------------
+• Composantes pour 85% variance: 1
+• Composantes pour 90% variance: 1
+• Composantes pour 95% variance: 1
+• Réduction recommandée: 1 composantes
+
+VARIANCE EXPLIQUÉE (2D):
+-----------------------
+• PC1: 100.00%
+• PC2: 0.00%
+• Total: 100.00%
+
+MÉTHODES APPLIQUÉES:
+-------------------
+✓ PCA (linéaire) - 1 composantes
+✓ t-SNE (non-linéaire) - visualisation 2D
+✓ LLE (non-linéaire) - visualisation 2D
+
+FICHIERS GÉNÉRÉS:
+----------------
+✓ financial_data_pca.csv (dataset avec 1 composantes)
+✓ pca_model.pkl (modèle PCA sauvegardé)
+✓ Graphiques de visualisation:
+  - pca_variance.png
+  - pca_2d_scatter.png
+  - pca_3d_interactive.html
+  - tsne_comparison.png
+  - lle_2d.png
+  - dimensionality_comparison.png
+
+RECOMMANDATIONS:
+---------------
+1. Utiliser PCA avec 1 composantes pour la modélisation
+2. PCA conserve 100.0%% de l'information
+3. Réduction de 94.1% du nombre de features
+4. t-SNE et LLE utiles pour visualisation uniquement
+
+AVANTAGES DE LA RÉDUCTION:
+--------------------------
+✓ Moins de features = modèles plus rapides
+✓ Réduction du sur-apprentissage
+✓ Élimination du bruit
+✓ Visualisation possible en 2D/3D
+✓ Meilleure interprétabilité
+
+PROCHAINE ÉTAPE:
+---------------
+→ Notebook 05: Modélisation (05_modeling.ipynb)
+  Utiliser soit:
+  - financial_data_selected_features.csv (features sélectionnées)
+  - financial_data_pca.csv (composantes principales)

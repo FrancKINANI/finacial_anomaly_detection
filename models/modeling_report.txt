@@ -1,0 +1,79 @@
+
+RÉSULTATS DE LA MODÉLISATION
+=============================
+Dataset: Taiwanese Bankruptcy Prediction
+Date: 2026-01-13 10:17
+
+DONNÉES:
+--------
+• Total observations: 6,819
+• Features: 17
+• Train/Test split: 80/20
+• Méthode de rééquilibrage: SMOTE
+
+MODÈLES TESTÉS: 7
+--------------
+  1. Logistic Regression
+  2. Decision Tree
+  3. Random Forest
+  4. Gradient Boosting
+  5. KNN
+  6. Naive Bayes
+  7. SVM
+
+MEILLEUR MODÈLE: Gradient Boosting
+----------------
+• ROC-AUC: 0.9305
+• Accuracy: 0.9032
+• Precision: 0.2143
+• Recall: 0.7500
+• F1-Score: 0.3333
+
+MATRICE DE CONFUSION:
+--------------------
+                Prédit: Sain    Prédit: Faillite
+Réel: Sain            1199              121
+Réel: Faillite          11               33
+
+INTERPRÉTATION:
+--------------
+• 33 faillites correctement détectées
+• 11 faillites manquées (Faux Négatifs)
+• 121 fausses alertes (Faux Positifs)
+• Taux de détection: 75.0%
+
+FICHIERS GÉNÉRÉS:
+----------------
+✓ ../models/best_model.pkl
+✓ ../models/feature_names.pkl
+✓ ../models/model_metrics.csv
+✓ Graphiques de visualisation (PNG)
+
+PERFORMANCES COMPARÉES:
+----------------------
+                     Accuracy  Precision    Recall  F1-Score   ROC-AUC
+Gradient Boosting    0.903226   0.214286  0.750000  0.333333  0.930458
+Random Forest        0.949413   0.345679  0.636364  0.448000  0.924509
+Naive Bayes          0.059384   0.033157  1.000000  0.064187  0.859220
+KNN                  0.901760   0.195946  0.659091  0.302083  0.854985
+Decision Tree        0.922287   0.257812  0.750000  0.383721  0.828564
+SVM                  0.055718   0.033033  1.000000  0.063953  0.507722
+Logistic Regression  0.473607   0.010174  0.159091  0.019126  0.293638
+
+RECOMMANDATIONS:
+---------------
+1. Le modèle Gradient Boosting est recommandé pour la production
+2. ROC-AUC de 0.9305 indique excellentes performances
+3. Recall de 0.7500 → 75.0% des faillites détectées
+4. Utiliser le modèle sauvegardé dans l'application Streamlit
+
+COÛT DES ERREURS:
+----------------
+• Faux Négatif (manquer une faillite): COÛT ÉLEVÉ ⚠️
+• Faux Positif (fausse alerte): Coût modéré
+→ Privilégier le Recall (sensibilité) pour minimiser les faillites manquées
+
+PROCHAINE ÉTAPE:
+---------------
+→ Développer l'application Streamlit (app/app.py)
+→ Intégrer le modèle sauvegardé pour les prédictions en temps réel

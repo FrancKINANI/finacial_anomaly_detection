@@ -1,0 +1,50 @@
+
+RAPPORT DE NETTOYAGE DES DONNÉES
+=================================
+Dataset: Taiwanese Bankruptcy Prediction
+Date: 2026-01-13 00:45
+
+DONNÉES ORIGINALES:
+------------------
+• Observations: 6,819
+• Variables: 96
+• Valeurs manquantes: 0 (0.00%)
+• Duplicatas: 0
+
+DONNÉES NETTOYÉES:
+-----------------
+• Observations: 6,819 (100.0% conservées)
+• Variables: 96
+• Valeurs manquantes: 0
+• Valeurs infinies: 0
+
+TRAITEMENTS APPLIQUÉS:
+---------------------
+1. Suppression des colonnes avec >50% de valeurs manquantes
+2. Imputation par la médiane pour valeurs manquantes restantes
+3. Suppression de 0 lignes dupliquées
+4. Traitement des outliers par winsorization (1er-99ème percentiles)
+5. Traitement des valeurs infinies et négatives aberrantes
+6. Normalisation avec RobustScaler (résistant aux outliers)
+
+DISTRIBUTION VARIABLE CIBLE:
+---------------------------
+Bankrupt?
+0    6599
+1     220
+
+Proportions:
+Bankrupt?
+0    0.967737
+1    0.032263
+
+
+QUALITÉ FINALE:
+--------------
+✓ Aucune valeur manquante
+✓ Aucune valeur infinie
+✓ Aucun duplicata
+✓ Outliers traités
+✓ Données normalisées
+✓ Prêt pour la modélisation
+
