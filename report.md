@@ -33,22 +33,27 @@ Avant tout modèle, il faut comprendre la nature des données. Les données fina
 ### **3. Étape 1 – Analyse Exploratoire (EDA) : Écouter les données**
 Le point de départ est l'humilité : ne rien supposer.
 *   **Dimensions** : Le dataset contient **6 819 entreprises** avec **96 variables** (ratios).
-*   **Le Défi du Déséquilibre** : Seuls **3,23 %** des cas sont des faillites (**220 entreprises**). C'est le coeur du problème : l'ordinateur risque de devenir "paresseux" et de prédire que tout le monde est sain pour avoir raison 97 % du temps.
-*   **Corrélations** : Nous avons identifié que le ratio **"Net Income to Total Assets"** (le bénéfice net par rapport aux actifs) est l'un des signaux les plus corrélés à la survie de l'entreprise.
+*   **Le Défi du Déséquilibre** : Seuls **3,23 %** des cas sont des faillites.
+*   **Visualisations Avancées** : Utilisation de **Violin Plots** pour comparer la densité des ratios entre entreprises saines et en faillite, et de **KDE (Kernel Density Estimation)** pour une vision lissée des probabilités.
+*   **Corrélations** : Une **Heatmap interactive** permet d'isoler les liens entre ratios, confirmant que le ratio **"Net Income to Total Assets"** est le signal le plus critique.
 
 ---
 
-### **4. Étape 2 – Nettoyage : Préparer le carburant**
-Avant de cuisiner, on lave les ingrédients.
-*   **Outliers (Valeurs Aberrantes)** : En finance, un chiffre extrême n'est pas forcément une erreur, mais il peut fausser les calculs. Nous avons appliqué la **Winsorisation (1er et 99e centile)** pour "raboter" les extrêmes sans perdre l'information.
-*   **Normalisation (RobustScaler)** : Comme la moyenne est trop sensible aux valeurs extrêmes, nous avons utilisé une méthode basée sur la **médiane** pour mettre toutes les variables à la même échelle.
+### **4. Étape 2 – Nettoyage et Transformation : Raffinement Technique**
+Avant d'alimenter l'IA, les données subissent une préparation rigoureuse :
+*   **Encodage** : Transformation des variables qualitatives en valeurs numériques via **Label Encoding** ou **One-Hot Encoding**.
+*   **Outliers (Valeurs Aberrantes)** : Winsorisation (1er et 99e centile) pour stabiliser les calculs.
+*   **Normalisation (RobustScaler)** : Utilisation de scalers robustes basés sur la médiane pour garantir que les extrêmes financiers ne biaisent pas le modèle.
 
 ---
 
 ### **5. Étape 3 – Sélection et Réduction : Garder l’essentiel**
 Avoir 95 variables crée du "bruit".
-*   **Sélection (Feature Selection)** : En croisant 5 méthodes (ANOVA, Mutual Info, Random Forest Importance...), nous avons réduit le dataset de **95 à 17 variables calculées**. C'est le "Top 20" des indicateurs de faillite.
-*   **Réduction (PCA)** : L'Analyse en Composantes Principales nous a permis de voir que l'information essentielle pouvait être compressée. Cela réduit les risques de surapprentissage (overfitting).
+*   **Sélection (Feature Selection)** : Optimisation de **95 à 17 variables** via une approche combinée (Random Forest Importance, RFE).
+*   **Réduction (MCA/PCA/LDA)** : 
+    *   **PCA** : Pour capturer la variance globale.
+    *   **LDA (AFD)** : Pour maximiser la séparation entre les classes (Sain vs Faillite).
+    *   **MCA** : Adaptation aux variables catégorielles.
 
 ---
 

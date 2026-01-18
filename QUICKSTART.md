@@ -4,7 +4,10 @@ Suivez ces étapes pour configurer et lancer le projet de détection d'anomalies
 
 ## 1. Prérequis
 
-Assurez-vous d'avoir Python installé (recommandé : 3.8+).
+Assurez-vous d'avoir Python installé (recommandé : 3.10+). 
+
+> [!IMPORTANT]
+> Ce projet nécessite **Numpy 2.2.6+** et **Scikit-Learn 1.7.2+** pour le chargement correct des modèles pré-entraînés.
 
 ## 2. Installation des dépendances
 
@@ -62,3 +65,10 @@ trainer = ModelTrainer()
 | **Lancer le Dashboard** | `streamlit run app/streamlit_app.py` |
 | **Exploration Interactive** | `jupyter notebook` |
 | **Récupérer les données** | `python scraping/run_scraping.py` |
+
+## 7. Génération de Rapports
+
+Une fois vos prédictions effectuées dans l'application :
+1. Allez dans la section **"📄 Rapport d'Expert"**.
+2. Vous y trouverez un récapitulatif de vos analyses de session.
+3. Cliquez sur **"📥 Télécharger le Rapport PDF"** pour obtenir un dossier complet incluant les graphiques de performance.
