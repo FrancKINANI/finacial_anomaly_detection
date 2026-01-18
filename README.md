@@ -29,13 +29,13 @@ Le projet est organisé selon une structure modulaire pour faciliter la maintena
 
 ## Technologies Utilisées
 
--   **Python 3.x**
--   **Pandas / Numpy** : Manipulation de données.
--   **Scikit-Learn** : Machine Learning.
+-   **Python 3.10+**
+-   **Pandas / Numpy 2.2.6+** : Manipulation de données (compatible avec les nouveaux BitGenerators).
+-   **Scikit-Learn 1.7.2+** : Machine Learning.
 -   **Imbalanced-learn (SMOTE)** : Gestion du déséquilibre des classes.
 -   **Matplotlib / Seaborn** : Visualisation.
--   **Streamlit** : Interface Web.
--   **FPDF** : Génération de rapports.
+-   **Streamlit 1.53.0+** : Interface Web.
+-   **ReportLab** : Génération de rapports PDF.
 
 ## Installation et Utilisation
 

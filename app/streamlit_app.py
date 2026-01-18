@@ -20,6 +20,12 @@ from reportlab.lib.units import inch
 from datetime import datetime
 import sys
 import os
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, LabelEncoder, RobustScaler
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.feature_selection import RFE
+import plotly.figure_factory as ff
 
 # Ajouter la racine du projet au path
 ROOT_DIR = Path(__file__).parent.parent
@@ -37,52 +43,111 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS personnalisé moderne
+# CSS personnalisé Premium
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
+
+    :root {
+        --primary: #6366f1;
+        --secondary: #a855f7;
+        --accent: #ec4899;
+    }
+
+    .stApp {
+        background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.1), rgba(15, 23, 42, 0.02));
+    }
+
+    /* Sidebar Fix */
+    [data-testid="stSidebar"] {
+        background-color: #1e293b !important;
+    }
+    [data-testid="stSidebarNav"] span, 
+    [data-testid="stSidebar"] label, 
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] small,
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3 {
+        color: #f8fafc !important;
+    }
+
     .main-header {
-        font-size: 2.5rem;
-        font-weight: bold;
-        background: linear-gradient(90deg, #1f77b4, #2ecc71);
+        font-family: 'Playfair Display', serif;
+        font-size: clamp(2rem, 5vw, 3.5rem);
+        font-weight: 700;
+        background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         text-align: center;
-        margin-bottom: 1rem;
+        margin: 2rem 0;
+        letter-spacing: -0.02em;
     }
+
+    .glass-card {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 24px;
+        padding: 2.5rem;
+        margin-bottom: 2rem;
+        transition: all 0.3s ease;
+        overflow: visible;
+    }
+    
+    [data-theme="light"] .glass-card {
+        background: rgba(0, 0, 0, 0.03);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        color: #1e293b;
+    }
+    
+    [data-theme="dark"] .glass-card {
+        color: #f8fafc;
+    }
+
     .stMetric {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1rem;
-        border-radius: 10px;
-        color: white;
-    }
-    .success-box {
-        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-        padding: 1.5rem;
-        border-radius: 10px;
-        color: white;
-        text-align: center;
-    }
-    .danger-box {
-        background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);
-        padding: 1.5rem;
-        border-radius: 10px;
-        color: white;
-        text-align: center;
-    }
-    .info-card {
-        background: rgba(31, 119, 180, 0.1);
-        padding: 1.5rem;
-        border-left: 5px solid #1f77b4;
-        border-radius: 10px;
-        margin: 1rem 0;
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 16px !important;
         backdrop-filter: blur(5px);
+        padding: 1.5rem !important;
     }
-    .info-card h3 {
-        color: #1f77b4;
-        margin-top: 0;
+
+    [data-theme="light"] .stMetric {
+        background: rgba(0, 0, 0, 0.02) !important;
+        border: 1px solid rgba(0, 0, 0, 0.05) !important;
     }
-    .info-card ul {
-        margin-bottom: 0;
+
+    /* Customizing Streamlit Widgets */
+    .stButton>button {
+        border-radius: 12px;
+        padding: 0.6rem 2rem;
+        background: linear-gradient(90deg, #6366f1, #a855f7);
+        border: none;
+        color: white;
+        font-weight: 600;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .stButton>button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.5);
+    }
+
+    [data-testid="stSidebar"] {
+        background-color: rgba(15, 23, 42, 0.95);
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .step-badge {
+        background: rgba(99, 102, 241, 0.1);
+        color: #818cf8;
+        padding: 0.2rem 0.8rem;
+        border-radius: 99px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        border: 1px solid rgba(99, 102, 241, 0.2);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -94,19 +159,28 @@ BASE_DIR = SCRIPT_DIR.parent if SCRIPT_DIR.name == 'app' else SCRIPT_DIR
 @st.cache_resource
 def load_model():
     """Charge le modèle ML"""
+    model_path = BASE_DIR / 'models' / 'best_model.pkl'
     try:
-        with open(BASE_DIR / 'models' / 'best_model.pkl', 'rb') as f:
+        if not model_path.exists():
+            st.warning(f"Modèle non trouvé à : {model_path}")
+            return None
+        with open(model_path, 'rb') as f:
             return pickle.load(f)
-    except:
+    except Exception as e:
+        st.error(f"Erreur lors du chargement du modèle : {e}")
         return None
 
 @st.cache_resource
 def load_features():
     """Charge les noms des features"""
+    features_path = BASE_DIR / 'models' / 'feature_names.pkl'
     try:
-        with open(BASE_DIR / 'models' / 'feature_names.pkl', 'rb') as f:
+        if not features_path.exists():
+            return None
+        with open(features_path, 'rb') as f:
             return pickle.load(f)
-    except:
+    except Exception as e:
+        st.error(f"Erreur lors du chargement des features : {e}")
         return None
 
 @st.cache_data
@@ -126,6 +200,9 @@ if 'predictions_history' not in st.session_state:
 # Header
 st.markdown('<h1 class="main-header">📊 Détection d\'Anomalies Financières</h1>', 
             unsafe_allow_html=True)
+
+# Récupération globale du dataset
+df = st.session_state.current_dataset
 
 # Sidebar
 with st.sidebar:
@@ -157,16 +234,17 @@ with st.sidebar:
                 st.error("❌ Erreur de chargement")
     
     elif data_source == "Scraper URL":
-        url = st.text_input("URL du dataset (CSV):")
-        if st.button("🌐 Scraper"):
-            with st.spinner("Scraping en cours..."):
+        url = st.text_input("URL du dataset (CSV ou Page HTML):")
+        is_dynamic = st.checkbox("Page Dynamique (Playwright)", help="Utilisez cette option pour les sites utilisant beaucoup de JavaScript")
+        if st.button("🌐 Lancer le Scraping"):
+            with st.spinner("Scraping en cours (cette étape peut prendre 10-60s)..."):
                 try:
-                    df = scraper.scrape_from_url(url)
+                    df = scraper.scrape_from_url(url, dynamic=is_dynamic)
                     if df is not None:
                         st.session_state.current_dataset = df
-                        st.success(f"✅ Données scrapées ({df.shape[0]} lignes)")
+                        st.success(f"✅ Données récupérées ({df.shape[0]} lignes)")
                     else:
-                        st.error("❌ Échec du scraping")
+                        st.error("❌ Échec du scraping. Vérifiez l'URL ou tentez le mode dynamique.")
                 except Exception as e:
                     st.error(f"❌ Erreur: {e}")
     
@@ -179,363 +257,451 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # Navigation
-    st.subheader("📑 Navigation")
+    # Arrêt si aucun dataset n'est chargé
+    if df is None:
+        st.info("👋 Bienvenue ! Veuillez charger un dataset dans le menu à gauche pour commencer l'analyse.")
+        st.stop()
+
+    # Définition des colonnes (Global)
+    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    cat_cols = df.select_dtypes(exclude=[np.number]).columns.tolist()
+    
+    # Navigation Restructurée
+    st.subheader("🚀 Étapes de l'Analyse")
     page = st.radio(
-        "Page:",
-        ["🏠 Accueil", "🔮 Prédiction", "📊 Dashboard", "📥 Export PDF"],
+        "Navigation:",
+        [
+            "🏠 Vue d'ensemble", 
+            "🔍 Exploration (EDA)", 
+            "⚙️ Transformation",
+            "🧹 Nettoyage des Données", 
+            "🎯 Sélection & Ingénierie",
+            "📉 Réduction (MCA/PCA/AFD)",
+            "🤖 Évaluation Modèles",
+            "🔮 Prédiction du Risque", 
+            "📄 Rapport d'Expert"
+        ],
         label_visibility="collapsed"
     )
 
-# Charger modèle
+# ============================================================================
+# RÉCUPÉRATION DES DONNÉES & MODÈLES
+# ============================================================================
+
 model = load_model()
 features = load_features()
+df = st.session_state.current_dataset
+
+if df is None:
+    st.markdown("""
+    <div class="glass-card" style="text-align: center; margin-top: 5rem;">
+        <h2 style="color: #818cf8;">👋 Bienvenue dans l'Expertise Financière</h2>
+        <p>Veuillez charger un dataset depuis la barre latérale pour commencer l'analyse.</p>
+        <div style="font-size: 5rem; margin: 2rem 0;">📊</div>
+    </div>
+    """, unsafe_allow_html=True)
+    st.stop()
 
 # ============================================================================
-# PAGE 1: ACCUEIL
+# ROUTING DES PAGES
 # ============================================================================
 
-if page == "🏠 Accueil":
-    col1, col2, col3 = st.columns(3)
+# 1. ACCUEIL / VUE D'ENSEMBLE
+if page == "🏠 Vue d'ensemble":
+    st.markdown('<h1 class="main-header">Vue d\'Ensemble du Projet</h1>', unsafe_allow_html=True)
     
+    col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("📊 Dataset", 
-                 f"{st.session_state.current_dataset.shape[0]:,}" if st.session_state.current_dataset is not None else "Aucun",
-                 "lignes chargées")
-    
+        st.metric("Total Lignes", f"{len(df):,}")
     with col2:
-        st.metric("🤖 Modèle", 
-                 "Actif" if model else "Inactif",
-                 "Random Forest")
-    
+        st.metric("Total Colonnes", f"{len(df.columns)}")
     with col3:
-        st.metric("📈 Précision", 
-                 "~95%" if model else "N/A",
-                 "ROC-AUC")
+        st.metric("Valeurs Manquantes", f"{df.isnull().sum().sum():,}")
+    with col4:
+        st.metric("Modèle IA", "RF Active" if model else "En attente")
+
+    st.markdown("""
+    <div class="glass-card">
+        <h3>🎯 Objectif du Projet</h3>
+        <p style="font-size: 1.1rem; line-height: 1.6; margin-bottom: 0;">
+            Ce système utilise des algorithmes de Machine Learning de pointe pour prédire le risque de faillite d'une entreprise 
+            sur la base de ratios financiers complexes. Notre objectif est de transformer les données brutes en insights 
+            actionnables pour les analystes financiers et les gestionnaires de risques.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    st.markdown("""
+    <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+        <span class="step-badge">Scikit-Learn</span>
+        <span class="step-badge">SMOTE</span>
+        <span class="step-badge">Random Forest</span>
+        <span class="step-badge">PCA</span>
+    </div>
+    """, unsafe_allow_html=True)
     
-    st.markdown("---")
+    st.subheader("💡 Aperçu des Données")
+    st.dataframe(df.head(10), width='stretch')
+
+# 2. EDA
+elif page == "🔍 Exploration (EDA)":
+    st.markdown('<h1 class="main-header">Exploration Statistique</h1>', unsafe_allow_html=True)
     
-    st.subheader("🎯 Fonctionnalités")
+    col_ctrl1, col_ctrl2 = st.columns([1, 2])
+    with col_ctrl1:
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        plot_type = st.selectbox("Type de Graphique:", 
+            ["📊 Barres (Catégoriel)", "📈 Histogramme & KDE", "🎻 Violin Plot", "📦 Box Plot", "🔥 Heatmap de Corrélation", "🌌 Scatter Matrix"])
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    if plot_type == "📊 Barres (Catégoriel)":
+        options = cat_cols + (['Bankrupt?'] if 'Bankrupt?' in df.columns and 'Bankrupt?' not in cat_cols else [])
+        if options:
+            col_bar = st.selectbox("Sélectionner la variable:", options)
+            if col_bar:
+                counts = df[col_bar].value_counts().reset_index()
+                counts.columns = ['Valeur', 'Nombre']
+                fig = px.bar(counts, x='Valeur', y='Nombre', 
+                            color='Valeur', color_discrete_sequence=px.colors.sequential.Purples)
+                fig.update_layout(showlegend=False)
+                st.plotly_chart(fig, width='stretch')
+        else:
+            st.warning("⚠️ Aucune variable catégorielle disponible pour ce graphique.")
+
+    elif plot_type == "📈 Histogramme & KDE":
+        col1 = st.selectbox("Variable:", numeric_cols)
+        fig = px.histogram(df, x=col1, marginal="rug", color_discrete_sequence=['#6366f1'])
+        st.plotly_chart(fig, width='stretch')
+
+    elif plot_type == "🎻 Violin Plot":
+        col1 = st.selectbox("Variable Numérique:", numeric_cols)
+        col2 = st.selectbox("Grouper par (Optionnel):", [None] + cat_cols + ['Bankrupt?'])
+        fig = px.violin(df, y=col1, x=col2, box=True, points="all", color_discrete_sequence=['#a855f7'])
+        st.plotly_chart(fig, width='stretch')
+
+    elif plot_type == "📦 Box Plot":
+        col1 = st.selectbox("Variable Numérique:", numeric_cols)
+        fig = px.box(df, y=col1, color_discrete_sequence=['#ec4899'])
+        st.plotly_chart(fig, width='stretch')
+
+    elif plot_type == "🔥 Heatmap de Corrélation":
+        corr = df.select_dtypes(include=[np.number]).corr()
+        fig = px.imshow(corr, text_auto=True, aspect="auto", color_continuous_scale='RdBu_r')
+        st.plotly_chart(fig, width='stretch')
+
+    elif plot_type == "🌌 Scatter Matrix":
+        selected_cols = st.multiselect("Colonnes (max 4):", numeric_cols, default=numeric_cols[:3])
+        if len(selected_cols) > 1:
+            fig = px.scatter_matrix(df, dimensions=selected_cols, color='Bankrupt?' if 'Bankrupt?' in df.columns else None)
+            st.plotly_chart(fig, width='stretch')
+
+# ⚙️ TRANSFORMATION
+elif page == "⚙️ Transformation":
+    st.markdown('<h1 class="main-header">Préparation des Données</h1>', unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
-    
     with col1:
-        st.markdown("""
-        <div class="info-card">
-            <h3>🔮 Prédiction Intelligente</h3>
-            <ul>
-                <li>Analyse en temps réel</li>
-                <li>3 modes de saisie</li>
-                <li>Probabilités détaillées</li>
-                <li>Recommandations personnalisées</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        st.subheader("🧬 Encodage Catégoriel")
+        encoding_type = st.radio("Méthode:", ["Aucune", "One-Hot Encoding", "Label Encoding"])
+        cols_to_encode = st.multiselect("Variables à encoder:", cat_cols)
         
-        st.markdown("""
-        <div class="info-card">
-            <h3>🌐 Web Scraping</h3>
-            <ul>
-                <li>Import depuis URL</li>
-                <li>Analyse automatique</li>
-                <li>Nettoyage intelligent</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
-    
+        if st.button("Appliquer Encodage") and cols_to_encode:
+            if encoding_type == "One-Hot Encoding":
+                df = pd.get_dummies(df, columns=cols_to_encode)
+                st.session_state.current_dataset = df
+                st.success("One-Hot Encoding appliqué !")
+                st.write("### 📸 Nouvelles Variables")
+                new_cols = [c for c in df.columns if any(orig in c for orig in cols_to_encode)]
+                fig = px.bar(x=new_cols[:15], y=[1]*len(new_cols[:15]), title="Aperçu des nouvelles colonnes created")
+                st.plotly_chart(fig, width='stretch')
+            elif encoding_type == "Label Encoding":
+                le = LabelEncoder()
+                for col in cols_to_encode:
+                    df[col] = le.fit_transform(df[col].astype(str))
+                st.session_state.current_dataset = df
+                st.success("Label Encoding appliqué !")
+                st.write(f"### 📊 Distribution : {cols_to_encode[0]}")
+                fig = px.histogram(df, x=cols_to_encode[0], color_discrete_sequence=['#818cf8'])
+                st.plotly_chart(fig, width='stretch')
+        st.markdown('</div>', unsafe_allow_html=True)
+
     with col2:
-        st.markdown("""
-        <div class="info-card">
-            <h3>📊 Dashboard Analytics</h3>
-            <ul>
-                <li>Visualisations interactives</li>
-                <li>KPIs en temps réel</li>
-                <li>Analyse comparative</li>
-                <li>Tendances et patterns</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        st.subheader("⚖️ Mise à l'échelle (Scaling)")
+        scaling_type = st.radio("Méthode:", ["Aucune", "Standardisation", "Normalisation", "Robust Scaling"])
+        cols_to_scale = st.multiselect("Variables à scaler:", numeric_cols)
         
-        st.markdown("""
-        <div class="info-card">
-            <h3>📥 Export PDF</h3>
-            <ul>
-                <li>Rapports professionnels</li>
-                <li>Graphiques inclus</li>
-                <li>Historique des prédictions</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
+        if st.button("Appliquer Scaling") and cols_to_scale:
+            # Sauvegarder l'original pour la comparaison
+            original_data = df[cols_to_scale[0]].copy() if cols_to_scale else None
+            
+            if scaling_type == "Standardisation":
+                scaler = StandardScaler()
+            elif scaling_type == "Normalisation":
+                scaler = MinMaxScaler()
+            else:
+                scaler = RobustScaler()
+            
+            df[cols_to_scale] = scaler.fit_transform(df[cols_to_scale])
+            st.session_state.current_dataset = df
+            st.success(f"{scaling_type} appliqué !")
+            
+            if original_data is not None:
+                st.write(f"### 📉 Comparaison : {cols_to_scale[0]}")
+                comp_df = pd.DataFrame({
+                    'Original': (original_data - original_data.mean()) / original_data.std() if scaling_type=="Standardisation" else original_data,
+                    'Transformé': df[cols_to_scale[0]]
+                })
+                fig = px.box(df, y=cols_to_scale[0], title=f"Nouvelle distribution de {cols_to_scale[0]}", color_discrete_sequence=['#f472b6'])
+                st.plotly_chart(fig, width='stretch')
+        st.markdown('</div>', unsafe_allow_html=True)
 
-# ============================================================================
-# PAGE 2: PRÉDICTION
-# ============================================================================
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.subheader("📋 Aperçu des Données Actuelles")
+    st.dataframe(df.head(10), width='stretch')
+    st.write(f"Types de colonnes : {df.dtypes.value_counts().to_dict()}")
+    st.markdown('</div>', unsafe_allow_html=True)
 
-elif page == "🔮 Prédiction":
-    st.header("🔮 Analyse du Risque de Faillite")
+# 3. NETTOYAGE
+elif page == "🧹 Nettoyage des Données":
+    st.markdown('<h1 class="main-header">Nettoyage & Qualité</h1>', unsafe_allow_html=True)
     
-    if model is None or features is None:
-        st.error("⚠️ Modèle non disponible. Exécutez le notebook 05_modeling.ipynb")
-        st.stop()
+    null_counts = df.isnull().sum()
+    if null_counts.sum() > 0:
+        st.write("### 🚨 Valeurs Manquantes Détectées")
+        st.bar_chart(null_counts[null_counts > 0])
+    else:
+        st.success("✨ Aucune valeur manquante détectée ! Le dataset est propre.")
     
-    # Mode de saisie
-    tab1, tab2, tab3 = st.tabs(["📝 Saisie Manuelle", "🎲 Exemple", "📋 Dataset"])
+    st.subheader("🔍 Aperçu du Dataset Nettoyé")
+    st.dataframe(df.head(15), width='stretch')
+    
+    st.subheader("🛠️ Techniques Appliquées")
+    st.markdown("""
+    - **Imputation** : Remplacement des valeurs manquantes par la médiane.
+    - **Outliers** : Détection via l'Intervalle Interquartile (IQR).
+    - **Normalisation** : Utilisation de RobustScaler pour gérer les valeurs extrêmes.
+    """)
+
+# 4. SÉLECTION & INGÉNIERIE
+elif page == "🎯 Sélection & Ingénierie":
+    st.markdown('<h1 class="main-header">Feature Engineering</h1>', unsafe_allow_html=True)
+    
+    tab1, tab2 = st.tabs(["🛠️ Ingénierie", "🎯 Sélection"])
     
     with tab1:
-        st.subheader("Entrez les ratios financiers")
-        
-        input_data = {}
-        cols = st.columns(3)
-        
-        key_ratios = features[:9] if len(features) > 9 else features
-        
-        for idx, feature in enumerate(key_ratios):
-            with cols[idx % 3]:
-                input_data[feature] = st.number_input(
-                    feature.strip()[:30],
-                    value=0.0,
-                    format="%.4f"
-                )
-        
-        for feature in features:
-            if feature not in input_data:
-                input_data[feature] = 0.0
-    
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        st.write("### 🏗️ Création de Variables")
+        new_feat_name = st.text_input("Nom de la nouvelle variable:", "feat_agg")
+        feat_to_agg = st.multiselect("Variables à agréger (Moyenne):", numeric_cols)
+        if st.button("Créer Variable") and feat_to_agg:
+            df[new_feat_name] = df[feat_to_agg].mean(axis=1)
+            st.session_state.current_dataset = df
+            st.success(f"Variable '{new_feat_name}' créée !")
+        st.markdown('</div>', unsafe_allow_html=True)
+
     with tab2:
-        if st.session_state.current_dataset is not None:
-            sample = st.session_state.current_dataset.sample(1).iloc[0]
-            
-            input_data = {}
-            for feature in features:
-                if feature in sample.index:
-                    input_data[feature] = float(sample[feature])
-                else:
-                    input_data[feature] = 0.0
-            
-            col1, col2, col3 = st.columns(3)
-            for idx, feat in enumerate(list(input_data.keys())[:9]):
-                with [col1, col2, col3][idx % 3]:
-                    st.metric(feat.strip()[:25], f"{input_data[feat]:.4f}")
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        st.write("### 🔍 Importance des Variables")
+        if 'Bankrupt?' in df.columns:
+            X = df.select_dtypes(include=[np.number]).drop('Bankrupt?', axis=1).fillna(0)
+            y = df['Bankrupt?']
+            rf = RandomForestClassifier(n_estimators=50)
+            rf.fit(X, y)
+            importances = pd.Series(rf.feature_importances_, index=X.columns).sort_values(ascending=False).head(15)
+            fig = px.bar(x=importances.values, y=importances.index, orientation='h', title="Top 15 variables (RF Importance)")
+            st.plotly_chart(fig, width='stretch')
         else:
-            st.warning("📂 Aucun dataset chargé")
+            st.warning("Cible 'Bankrupt?' absente pour la sélection supervisée.")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+# 5. RÉDUCTION (MCA/PCA/AFD)
+elif page == "📉 Réduction (MCA/PCA/AFD)":
+    st.markdown('<h1 class="main-header">Analyse Factorielle</h1>', unsafe_allow_html=True)
     
-    with tab3:
-        if st.session_state.current_dataset is not None:
-            row_idx = st.number_input("Ligne à analyser:", 
-                                     min_value=0, 
-                                     max_value=len(st.session_state.current_dataset)-1,
-                                     value=0)
-            
-            row = st.session_state.current_dataset.iloc[row_idx]
-            input_data = {f: float(row[f]) if f in row.index else 0.0 for f in features}
-            
-            st.dataframe(row.to_frame().T)
+    method = st.selectbox("Méthode de Réduction:", ["PCA (Numérique)", "LDA/AFD (Supervisé)", "MCA (Catégoriel - Approximé)"])
+    
+    numeric_df = df.select_dtypes(include=[np.number]).fillna(0)
+    
+    if method == "PCA (Numérique)":
+        if len(numeric_df.columns) > 2:
+            pca = PCA(n_components=2)
+            components = pca.fit_transform(StandardScaler().fit_transform(numeric_df))
+            pca_df = pd.DataFrame(data=components, columns=['PC1', 'PC2'])
+            if 'Bankrupt?' in df.columns: pca_df['Target'] = df['Bankrupt?'].values
+            fig = px.scatter(pca_df, x='PC1', y='PC2', color='Target' if 'Target' in pca_df.columns else None, title="Projection PCA (2D)")
+            st.plotly_chart(fig, width='stretch')
+            st.subheader("📋 Composantes Principales (Aperçu)")
+            st.dataframe(pca_df.head(10), width='stretch')
+
+    elif method == "LDA/AFD (Supervisé)":
+        if 'Bankrupt?' in df.columns and len(numeric_df.columns) > 2:
+            X = numeric_df.drop('Bankrupt?', axis=1) if 'Bankrupt?' in numeric_df.columns else numeric_df
+            y = df['Bankrupt?']
+            lda = LDA(n_components=1)
+            components = lda.fit_transform(X, y)
+            lda_df = pd.DataFrame(data=components, columns=['LD1'])
+            lda_df['Target'] = y.values
+            fig = px.histogram(lda_df, x='LD1', color='Target', barmode='overlay', title="Projection LDA (Séparation des Classes)")
+            st.plotly_chart(fig, width='stretch')
         else:
-            st.warning("📂 Aucun dataset chargé")
+            st.error("LDA nécessite une variable cible et plusieurs variables numériques.")
     
+    elif method == "MCA (Catégoriel - Approximé)":
+        st.info("L'Analyse des Correspondances Multiples (MCA) est ici approximée par une PCA sur des variables indicatrices (Dummy variables).")
+        cat_df = df.select_dtypes(exclude=[np.number])
+        if not cat_df.empty:
+            dummy_df = pd.get_dummies(cat_df)
+            pca = PCA(n_components=2)
+            comp = pca.fit_transform(dummy_df)
+            mca_df = pd.DataFrame(comp, columns=['Factor 1', 'Factor 2'])
+            if 'Bankrupt?' in df.columns: mca_df['Target'] = df['Bankrupt?'].values
+            fig = px.scatter(mca_df, x='Factor 1', y='Factor 2', color='Target' if 'Target' in mca_df.columns else None, title="Projection MCA (Dummy PCA)")
+            st.plotly_chart(fig, width='stretch')
+        else:
+            st.warning("Aucune variable catégorielle trouvée pour la MCA.")
+
+# 6. ÉVALUATION MODÈLES
+elif page == "🤖 Évaluation Modèles":
+    st.markdown('<h1 class="main-header">Performance du Modèle</h1>', unsafe_allow_html=True)
+    
+    # Charger les métriques
+    try:
+        metrics_df = pd.read_csv(BASE_DIR / 'models' / 'model_metrics.csv')
+        best_row = metrics_df.iloc[0]
+        
+        m_col1, m_col2, m_col3, m_col4, m_col5 = st.columns(5)
+        m_col1.metric("Precision", f"{best_row['Precision']:.2f}")
+        m_col2.metric("Recall", f"{best_row['Recall']:.2f}")
+        m_col3.metric("F1-Score", f"{best_row['F1-Score']:.2f}")
+        m_col4.metric("Accuracy", f"{best_row['Accuracy']:.2f}")
+        m_col5.metric("ROC-AUC", f"{best_row['ROC-AUC']:.2f}")
+    except:
+        st.warning("Métriques détaillées non disponibles.")
+
     st.markdown("---")
     
-    # Prédiction
-    if st.button("🚀 ANALYSER", type="primary", use_container_width=True):
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write("### 📈 Matrice de Confusion")
+        conf_mat_path = BASE_DIR / 'data' / 'figures' / 'confusion_matrix.png'
+        if conf_mat_path.exists():
+            st.image(str(conf_mat_path), use_container_width=True)
+        else:
+            st.info("Visualisation de la matrice non disponible.")
+        
+    with col2:
+        st.write("### 📉 Courbe ROC")
+        roc_path = BASE_DIR / 'data' / 'figures' / 'roc_pr_curves.png'
+        if roc_path.exists():
+            st.image(str(roc_path), use_container_width=True)
+        else:
+            st.info("Visualisation ROC non disponible.")
+
+    st.markdown("---")
+    st.write("### 📊 Comparaison des Modèles")
+    comp_path = BASE_DIR / 'data' / 'figures' / 'models_comparison.png'
+    if comp_path.exists():
+        st.image(str(comp_path), use_container_width=True)
+
+# 7. PRÉDICTION
+elif page == "🔮 Prédiction du Risque":
+    st.markdown('<h1 class="main-header">Moteur de Prédiction</h1>', unsafe_allow_html=True)
+    
+    if model is None or features is None:
+        st.error("⚠️ Modèle non disponible.")
+        st.stop()
+        
+    tab1, tab2 = st.tabs(["📝 Saisie Manuelle", "📋 Depuis le Dataset"])
+    
+    with tab1:
+        input_data = {}
+        cols = st.columns(3)
+        for idx, f in enumerate(features[:9]):
+            with cols[idx % 3]:
+                input_data[f] = st.number_input(f.strip()[:30], value=0.0, format="%.4f")
+        for f in features:
+            if f not in input_data: input_data[f] = 0.0
+
+    with tab2:
+        row_idx = st.number_input("Index ligne:", 0, len(df)-1, 0)
+        row = df.iloc[row_idx]
+        input_data = {f: float(row[f]) if f in row.index else 0.0 for f in features}
+        st.dataframe(row.to_frame().T)
+
+    if st.button("🚀 LANCER L'ANALYSE IA", width='stretch'):
         input_df = pd.DataFrame([input_data])[features]
-        
-        prediction = model.predict(input_df)[0]
-        probability = model.predict_proba(input_df)[0]
-        
-        proba_healthy = probability[0]
-        proba_bankrupt = probability[1]
+        prob = model.predict_proba(input_df)[0][1]
         
         # Sauvegarder dans l'historique
         st.session_state.predictions_history.append({
             'timestamp': datetime.now(),
-            'prediction': prediction,
-            'probability': proba_bankrupt,
-            'input_data': input_data
+            'prediction': 1 if prob > 0.5 else 0,
+            'probability': float(prob),
+            'features': input_data
         })
         
         st.markdown("---")
-        
-        # Résultat
-        col1, col2, col3 = st.columns([1, 2, 1])
-        
-        with col2:
-            if prediction == 1:
-                st.markdown(f"""
-                <div class="danger-box">
-                    <h2>⚠️ RISQUE ÉLEVÉ</h2>
-                    <h1>{proba_bankrupt*100:.1f}%</h1>
-                    <p>Probabilité de faillite</p>
-                </div>
-                """, unsafe_allow_html=True)
+        colA, colB = st.columns([1, 1])
+        with colA:
+            if prob > 0.5:
+                st.markdown(f'<div style="background: rgba(236, 72, 153, 0.2); padding: 2rem; border-radius: 20px; border: 1px solid #ec4899; text-align: center;">'
+                           f'<h2 style="color: #f472b6;">RISQUE ÉLEVÉ</h2>'
+                           f'<h1 style="font-size: 4rem;">{prob*100:.1f}%</h1></div>', unsafe_allow_html=True)
             else:
-                st.markdown(f"""
-                <div class="success-box">
-                    <h2>✅ ENTREPRISE SAINE</h2>
-                    <h1>{proba_healthy*100:.1f}%</h1>
-                    <p>Santé financière</p>
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f'<div style="background: rgba(99, 102, 241, 0.2); padding: 2rem; border-radius: 20px; border: 1px solid #6366f1; text-align: center;">'
+                           f'<h2 style="color: #818cf8;">ENTREPRISE SAINE</h2>'
+                           f'<h1 style="font-size: 4rem;">{(1-prob)*100:.1f}%</h1></div>', unsafe_allow_html=True)
         
-        # Gauge
-        fig = go.Figure(go.Indicator(
-            mode="gauge+number",
-            value=proba_bankrupt * 100,
-            title={'text': "Risque de Faillite"},
-            gauge={
-                'axis': {'range': [None, 100]},
-                'bar': {'color': "darkred"},
-                'steps': [
-                    {'range': [0, 30], 'color': "lightgreen"},
-                    {'range': [30, 70], 'color': "yellow"},
-                    {'range': [70, 100], 'color': "lightcoral"}
-                ],
-                'threshold': {
-                    'line': {'color': "red", 'width': 4},
-                    'thickness': 0.75,
-                    'value': 50
-                }
-            }
-        ))
-        fig.update_layout(height=300)
-        st.plotly_chart(fig, use_container_width=True)
+        with colB:
+            fig = go.Figure(go.Indicator(mode="gauge+number", value=prob*100, 
+                gauge={'axis': {'range': [0, 100]}, 'bar': {'color': "#ec4899"}}))
+            fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', height=300)
+            st.plotly_chart(fig, width='stretch')
 
-# ============================================================================
-# PAGE 3: DASHBOARD
-# ============================================================================
-
-elif page == "📊 Dashboard":
-    st.header("📊 Dashboard Analytique")
-    
-    if st.session_state.current_dataset is None:
-        st.warning("📂 Chargez un dataset pour afficher le dashboard")
-        st.stop()
-    
-    df = st.session_state.current_dataset
-    
-    # KPIs
-    st.subheader("📈 Indicateurs Clés")
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        st.metric("Total Observations", f"{len(df):,}")
-    
-    with col2:
-        if 'Bankrupt?' in df.columns:
-            st.metric("Entreprises Saines", f"{(df['Bankrupt?']==0).sum():,}")
-    
-    with col3:
-        if 'Bankrupt?' in df.columns:
-            st.metric("Faillites", f"{(df['Bankrupt?']==1).sum():,}")
-    
-    with col4:
-        st.metric("Features", f"{len(df.columns)}")
-    
-    st.markdown("---")
-    
-    # Visualisations
-    tab1, tab2, tab3 = st.tabs(["📊 Distributions", "🔗 Corrélations", "📈 Tendances"])
-    
-    with tab1:
-        if 'Bankrupt?' in df.columns:
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                fig = px.pie(values=df['Bankrupt?'].value_counts().values,
-                            names=['Sain', 'Faillite'],
-                            title='Distribution des Classes',
-                            color_discrete_sequence=['#2ecc71', '#e74c3c'])
-                st.plotly_chart(fig, use_container_width=True)
-            
-            with col2:
-                fig = px.bar(x=['Sain', 'Faillite'],
-                            y=df['Bankrupt?'].value_counts().values,
-                            title='Nombre par Classe',
-                            color=df['Bankrupt?'].value_counts().values,
-                            color_continuous_scale='RdYlGn_r')
-                st.plotly_chart(fig, use_container_width=True)
-    
-    with tab2:
-        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-        if len(numeric_cols) > 1:
-            selected_cols = st.multiselect("Sélectionner features:", 
-                                          numeric_cols[:10],
-                                          default=numeric_cols[:5])
-            
-            if len(selected_cols) > 1:
-                corr = df[selected_cols].corr()
-                fig = px.imshow(corr, text_auto=True, aspect="auto",
-                               title="Matrice de Corrélation",
-                               color_continuous_scale='RdBu_r')
-                st.plotly_chart(fig, use_container_width=True)
-    
-    with tab3:
-        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-        if numeric_cols:
-            feature = st.selectbox("Feature à analyser:", numeric_cols)
-            
-            fig = px.histogram(df, x=feature, 
-                              color='Bankrupt?' if 'Bankrupt?' in df.columns else None,
-                              title=f"Distribution de {feature}",
-                              marginal="box")
-            st.plotly_chart(fig, use_container_width=True)
-
-# ============================================================================
-# PAGE 4: EXPORT PDF
-# ============================================================================
-
-elif page == "📥 Export PDF":
-    st.header("📥 Export des Résultats en PDF")
+# 8. RAPPORT
+elif page == "📄 Rapport d'Expert":
+    st.markdown('<h1 class="main-header">Rapport Professionnel</h1>', unsafe_allow_html=True)
     
     if not st.session_state.predictions_history:
-        st.warning("⚠️ Aucune prédiction à exporter. Effectuez d'abord des prédictions.")
-        st.stop()
-    
-    st.subheader(f"📊 Historique: {len(st.session_state.predictions_history)} prédiction(s)")
-    
-    # Afficher l'historique
-    for idx, pred in enumerate(st.session_state.predictions_history[-5:], 1):
-        with st.expander(f"Prédiction #{idx} - {pred['timestamp'].strftime('%H:%M:%S')}"):
-            col1, col2 = st.columns(2)
-            with col1:
-                st.metric("Résultat", 
-                         "Faillite ⚠️" if pred['prediction'] == 1 else "Saine ✅")
-            with col2:
-                st.metric("Probabilité", f"{pred['probability']*100:.1f}%")
-    
-    st.markdown("---")
-    
-    # Options d'export
-    st.subheader("⚙️ Options d'Export")
-    
-    include_graphs = st.checkbox("Inclure les graphiques", value=True)
-    include_details = st.checkbox("Inclure les détails techniques", value=True)
-    
-    if st.button("📄 Générer le PDF", type="primary"):
-        with st.spinner("Génération du PDF..."):
-            try:
-                pdf_bytes = pdf_generator.generate_report(
-                    st.session_state.predictions_history,
-                    st.session_state.current_dataset,
-                    include_graphs=include_graphs,
-                    include_details=include_details
-                )
-                
-                st.success("✅ PDF généré avec succès!")
-                
-                st.download_button(
-                    label="📥 Télécharger le PDF",
-                    data=pdf_bytes,
-                    file_name=f"rapport_predictions_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
-                    mime="application/pdf"
-                )
-            except Exception as e:
-                st.error(f"❌ Erreur: {e}")
+        st.info("Aucune prédiction effectuée pour le moment. Réalisez des analyses dans la section 'Prédiction' pour générer un rapport.")
+    else:
+        st.markdown(f"""
+        <div class="glass-card" style="text-align: center;">
+            <h3>Générer le Dossier d'Analyse</h3>
+            <p>Téléchargez un rapport complet incluant {len(st.session_state.predictions_history)} analyse(s) effectuée(s).</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        pdf_data = pdf_generator.generate_report(
+            st.session_state.predictions_history,
+            dataset=st.session_state.current_dataset
+        )
+        
+        st.download_button(
+            label="📥 Télécharger le Rapport PDF",
+            data=pdf_data,
+            file_name=f"rapport_expertise_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+            mime="application/pdf",
+            key="download-report"
+        )
+        
+        st.write("### 🕒 Historique Récent")
+        hist_df = pd.DataFrame([
+            {
+                'Heure': p['timestamp'].strftime('%H:%M:%S'),
+                'Résultat': "⚠️ Risque" if p['prediction'] == 1 else "✅ Sain",
+                'Confiance': f"{p['probability']*100:.1f}%" if p['prediction'] == 1 else f"{(1-p['probability'])*100:.1f}%"
+            } for p in st.session_state.predictions_history[::-1][:5]
+        ])
+        st.table(hist_df)
 
 # Footer
 st.markdown("---")
 st.markdown("""
-<div style="text-align: center; color: #666; padding: 1rem;">
-    <p>📊 Détection d'Anomalies Financières - Version Professionnelle</p>
-    <p>Développé avec Streamlit | Python | Machine Learning</p>
+<div style="text-align: center; color: #94a3b8; padding: 2rem; font-family: 'Outfit', sans-serif;">
+    <p>© 2026 AI Financial Intelligence - Système de Détection d'Anomalies Alpha</p>
 </div>
 """, unsafe_allow_html=True)

@@ -6,17 +6,22 @@ import pandas as pd
 import requests
 from io import StringIO
 import re
+from .dynamic import playwright_scraper
 
-def scrape_from_url(url):
+def scrape_from_url(url, dynamic=False):
     """
-    Scrape un dataset CSV depuis une URL
+    Scrape un dataset depuis une URL (Supporte statique et dynamique)
     
     Args:
-        url (str): URL du fichier CSV
+        url (str): URL du fichier ou de la page
+        dynamic (bool): Si True, utilise Playwright pour les pages dynamiques
     
     Returns:
         pd.DataFrame: Dataset chargé ou None si erreur
     """
+    if dynamic:
+        return playwright_scraper.scrape_dynamic_csv(url)
+    
     try:
         # Télécharger le contenu
         response = requests.get(url, timeout=30)
