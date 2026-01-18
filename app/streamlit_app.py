@@ -7,6 +7,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import pickle
+import sklearn
 import plotly.graph_objects as go
 import plotly.express as px
 from pathlib import Path
@@ -207,6 +208,13 @@ df = st.session_state.current_dataset
 # Sidebar
 with st.sidebar:
     st.title("⚙️ Configuration")
+    
+    # Diagnostic de version
+    st.sidebar.markdown("---")
+    st.sidebar.caption("🛠️ Environnement Runtime")
+    st.sidebar.text(f"Numpy: {np.__version__}")
+    st.sidebar.text(f"Sklearn: {sklearn.__version__}")
+    st.sidebar.markdown("---")
     
     # Sélection du dataset
     st.subheader("📂 Source de Données")
