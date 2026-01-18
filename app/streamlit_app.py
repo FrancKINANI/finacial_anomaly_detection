@@ -209,13 +209,6 @@ df = st.session_state.current_dataset
 with st.sidebar:
     st.title("⚙️ Configuration")
     
-    # Diagnostic de version
-    st.sidebar.markdown("---")
-    st.sidebar.caption("🛠️ Environnement Runtime")
-    st.sidebar.text(f"Numpy: {np.__version__}")
-    st.sidebar.text(f"Sklearn: {sklearn.__version__}")
-    st.sidebar.markdown("---")
-    
     # Sélection du dataset
     st.subheader("📂 Source de Données")
     data_source = st.radio(
